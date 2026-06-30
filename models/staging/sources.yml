@@ -1,0 +1,77 @@
+# ============================================================
+# File: models/staging/sources.yml
+# Purpose: Register raw BigQuery source tables
+# ============================================================
+
+version: 2
+
+sources:
+  - name: fraud_raw
+
+    database: fraud-detection-de-project
+
+    schema: fraud_raw_dev
+
+    description: "Raw fraud transaction data loaded from Dataproc into BigQuery External Table."
+
+    tables:
+
+      - name: ext_batch_transactions
+
+        description: "External table pointing to processed Parquet files stored in GCS."
+
+        columns:
+
+          - name: step
+            description: "Transaction step number."
+
+          - name: type
+            description: "Type of transaction."
+
+          - name: amount
+            description: "Transaction amount."
+
+          - name: oldbalanceOrg
+            description: "Sender balance before transaction."
+
+          - name: newbalanceOrig
+            description: "Sender balance after transaction."
+
+          - name: oldbalanceDest
+            description: "Receiver balance before transaction."
+
+          - name: newbalanceDest
+            description: "Receiver balance after transaction."
+
+          - name: isFraud
+            description: "Fraud flag from source system."
+
+          - name: isFlaggedFraud
+            description: "High-value fraud flag."
+
+          - name: nameOrig_masked
+            description: "SHA-256 masked sender identifier."
+
+          - name: nameDest_masked
+            description: "SHA-256 masked receiver identifier."
+
+          - name: amount_category
+            description: "Transaction amount category."
+
+          - name: is_high_amount
+            description: "Indicates whether transaction amount is high."
+
+          - name: balance_change
+            description: "Net balance change."
+
+          - name: fraud_band
+            description: "Fraud risk category."
+
+          - name: processing_timestamp
+            description: "Timestamp when PySpark processed the record."
+
+          - name: data_source
+            description: "Pipeline source."
+
+          - name: loaded_at
+            description: "Timestamp when record was loaded."

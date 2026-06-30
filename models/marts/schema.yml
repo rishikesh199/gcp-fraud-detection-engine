@@ -1,0 +1,125 @@
+# ============================================================
+# File: models/marts/schema.yml
+# Purpose: Documentation and tests for Mart models
+# ============================================================
+
+version: 2
+
+models:
+
+  # ==========================================================
+  # FACT TABLE
+  # ==========================================================
+
+  - name: fct_fraud_transactions
+    description: "Business-ready fact table for fraud transaction analysis."
+
+    columns:
+
+      - name: transaction_type
+        description: "Type of financial transaction."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - PAYMENT
+                  - TRANSFER
+                  - CASH_IN
+                  - CASH_OUT
+                  - DEBIT
+
+      - name: amount
+        description: "Transaction amount."
+        tests:
+          - not_null
+
+      - name: fraud_band
+        description: "Fraud risk category."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - NORMAL
+                  - FRAUD
+
+      - name: is_fraud_transaction
+        description: "Business fraud flag."
+        tests:
+          - not_null
+
+      - name: action_required
+        description: "Recommended business action."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - CLEAR
+                  - IMMEDIATE_ACTION
+
+      - name: transaction_date
+        description: "Date extracted from processing timestamp."
+        tests:
+          - not_null
+
+      - name: processing_timestamp
+        description: "Timestamp when transaction was processed."
+        tests:
+          - not_null
+
+  # ==========================================================
+  # KPI TABLE
+  # ==========================================================
+
+  - name: fct_fraud_kpis
+    description: "Daily KPI summary for fraud reporting."
+
+    columns:
+
+      - name: report_date
+        description: "Business reporting date."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_transactions
+        description: "Total transactions processed."
+        tests:
+          - not_null
+
+      - name: fraud_rate_pct
+        description: "Fraud percentage for the reporting date."
+
+      - name: total_amount
+        description: "Total transaction amount."
+
+      - name: avg_amount
+        description: "Average transaction amount."
+
+  # ==========================================================
+  # DIMENSION TABLE
+  # ==========================================================
+
+  - name: dim_transaction_type
+    description: "Transaction type level aggregated statistics."
+
+    columns:
+
+      - name: transaction_type
+        description: "Transaction type."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_transactions
+        description: "Total transactions."
+
+      - name: fraud_transactions
+        description: "Fraudulent transactions."
+
+      - name: fraud_rate_pct
+        description: "Fraud percentage."
+
+      - name: total_amount
+        description: "Total transaction amount."
