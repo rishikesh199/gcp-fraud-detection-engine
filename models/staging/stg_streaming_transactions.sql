@@ -1,11 +1,11 @@
 -- ============================================================
--- Staging Model: stg_transactions (Batch Path)
--- Source: fraud_raw.ext_batch_transactions (PySpark Parquet)
--- Schema: Master schema (26 cols, PII already masked by PySpark)
+-- Staging Model: stg_streaming_transactions (Streaming Path)
+-- Source: fraud_raw.raw_streaming_transactions (Dataflow)
+-- Schema: Master schema (26 cols, PII already masked by Dataflow)
 -- ============================================================
 
 WITH source AS (
-    SELECT * FROM {{ source('fraud_raw', 'ext_batch_transactions') }}
+    SELECT * FROM {{ source('fraud_raw', 'raw_streaming_transactions') }}
     WHERE transaction_id IS NOT NULL
       AND amount > 0
       AND amount < 5000000
@@ -36,7 +36,7 @@ cleaned AS (
         COALESCE(is_fraud, FALSE)         AS is_fraud,
         COALESCE(is_high_amount, FALSE)   AS is_high_amount,
         UPPER(TRIM(COALESCE(action_required, 'CLEAR'))) AS action_required,
-        'batch_csv'                       AS data_source,
+        'streaming_realtime'              AS data_source,
         COALESCE(processing_timestamp, CURRENT_TIMESTAMP()) AS processing_timestamp,
         CURRENT_TIMESTAMP()               AS loaded_at
     FROM source

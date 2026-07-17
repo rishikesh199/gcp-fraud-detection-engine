@@ -1,93 +1,65 @@
 -- ============================================================
--- File: models/marts/fct_fraud_kpis.sql
--- Purpose: Daily KPI summary for reporting
--- Layer: MART
+-- Mart Model: fct_fraud_kpis
+-- Purpose: Daily KPI summary aggregated from unified fact table
+-- Source: fct_fraud_transactions (batch + streaming combined)
 -- ============================================================
 
 {{
-    config(
-        materialized='table',
-        tags=['daily','mart','kpi']
-    )
+  config(
+    materialized='table',
+    partition_by={
+      "field": "report_date",
+      "data_type": "date",
+      "granularity": "day"
+    }
+  )
 }}
 
-WITH transactions AS (
-
-    SELECT *
-
-    FROM {{ ref('fct_fraud_transactions') }}
-
+WITH fact AS (
+    SELECT * FROM {{ ref('fct_fraud_transactions') }}
 )
 
 SELECT
+    transaction_date                                      AS report_date,
 
-    transaction_date AS report_date,
+    -- Volume metrics
+    COUNT(*)                                              AS total_transactions,
+    COUNT(DISTINCT customer_id_masked)                    AS unique_customers,
+    COUNT(DISTINCT merchant_id)                           AS unique_merchants,
 
-    --------------------------------------------------------
-    -- Volume Metrics
-    --------------------------------------------------------
+    -- Fraud metrics
+    COUNTIF(is_fraud)                                     AS fraud_transactions,
+    ROUND(COUNTIF(is_fraud) * 100.0 / NULLIF(COUNT(*), 0), 2) AS fraud_rate_pct,
 
-    COUNT(*) AS total_transactions,
+    -- Fraud band distribution
+    COUNTIF(fraud_band = 'LOW')                           AS low_risk_count,
+    COUNTIF(fraud_band = 'MEDIUM')                        AS medium_risk_count,
+    COUNTIF(fraud_band = 'HIGH')                          AS high_risk_count,
+    COUNTIF(fraud_band = 'CRITICAL')                      AS critical_risk_count,
 
-    COUNT(DISTINCT nameOrig_masked) AS unique_customers,
+    -- Amount metrics
+    ROUND(SUM(amount), 2)                                 AS total_amount,
+    ROUND(AVG(amount), 2)                                 AS avg_amount,
+    ROUND(MAX(amount), 2)                                 AS max_amount,
+    ROUND(MIN(amount), 2)                                 AS min_amount,
+    ROUND(SUM(CASE WHEN is_fraud THEN amount ELSE 0 END), 2) AS fraud_amount,
 
-    --------------------------------------------------------
-    -- Fraud Breakdown
-    --------------------------------------------------------
+    -- High amount transactions
+    COUNTIF(is_high_amount)                               AS high_amount_count,
 
-    SUM(CASE WHEN fraud_band='HIGH' THEN 1 ELSE 0 END)
-        AS high_risk_count,
+    -- Action distribution
+    COUNTIF(action_required = 'BLOCK')                    AS blocked_count,
+    COUNTIF(action_required = 'REVIEW')                   AS review_count,
 
-    SUM(CASE WHEN fraud_band='NORMAL' THEN 1 ELSE 0 END)
-        AS normal_risk_count,
+    -- Data source breakdown
+    COUNTIF(data_source = 'batch_csv')                    AS batch_records,
+    COUNTIF(data_source = 'streaming_realtime')           AS streaming_records,
 
-    --------------------------------------------------------
-    -- Amount Metrics
-    --------------------------------------------------------
+    -- Payment insights
+    COUNT(DISTINCT transaction_type)                      AS unique_transaction_types,
+    COUNT(DISTINCT country)                               AS unique_countries,
 
-    ROUND(SUM(amount),2)
-        AS total_amount,
+    CURRENT_TIMESTAMP()                                   AS last_refreshed
 
-    ROUND(AVG(amount),2)
-        AS avg_amount,
-
-    ROUND(MAX(amount),2)
-        AS max_amount,
-
-    --------------------------------------------------------
-    -- Fraud Rate
-    --------------------------------------------------------
-
-    ROUND(
-
-        SUM(CASE WHEN is_fraud_transaction THEN 1 ELSE 0 END)
-
-        *100.0
-
-        /COUNT(*),
-
-        2
-
-    ) AS fraud_rate_pct,
-
-    --------------------------------------------------------
-    -- High Amount Transactions
-    --------------------------------------------------------
-
-    SUM(CASE WHEN is_high_amount THEN 1 ELSE 0 END)
-
-        AS high_amount_transactions,
-
-    --------------------------------------------------------
-    -- Data Source
-    --------------------------------------------------------
-
-    SUM(CASE WHEN data_source='batch_historical' THEN 1 ELSE 0 END)
-
-        AS batch_records
-
-FROM transactions
-
+FROM fact
 GROUP BY transaction_date
-
-ORDER BY transaction_date

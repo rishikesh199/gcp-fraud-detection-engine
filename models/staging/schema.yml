@@ -1,160 +1,298 @@
-# ============================================================
-# File: models/staging/schema.yml
-# Purpose: Tests and documentation for staging models
-# ============================================================
-
 version: 2
 
 models:
-
-  # ==========================================================
-  # BATCH STAGING
-  # ==========================================================
-
   - name: stg_transactions
-    description: "Cleaned and standardized batch transaction data."
-
+    description: >
+      Staged batch transactions from PySpark Parquet output.
+      Master schema (26 columns), PII pre-masked by PySpark.
+      Light cleaning: COALESCE nulls, TRIM strings, ROUND amounts.
     columns:
-
-      - name: step
-        description: "Transaction step from the source dataset."
+      - name: transaction_id
+        description: "Unique transaction ID"
         tests:
           - not_null
-
+          - unique
+      - name: event_timestamp
+        description: "When the transaction occurred"
+        tests:
+          - not_null
+      - name: transaction_date
+        description: "Date portion for partitioning"
+        tests:
+          - not_null
+      - name: customer_id_masked
+        description: "SHA-256 masked customer ID"
+        tests:
+          - not_null
+      - name: receiver_id_masked
+        description: "SHA-256 masked receiver ID"
+      - name: card_number_masked
+        description: "SHA-256 masked card number"
       - name: transaction_type
-        description: "Type of financial transaction."
+        description: "Transaction type ENUM"
         tests:
           - not_null
           - accepted_values:
               arguments:
                 values:
-                  - PAYMENT
-                  - TRANSFER
-                  - CASH_IN
-                  - CASH_OUT
-                  - DEBIT
-
+                  - "UPI"
+                  - "IMPS"
+                  - "NEFT"
+                  - "RTGS"
+                  - "WALLET"
+                  - "CREDIT_CARD"
+                  - "DEBIT_CARD"
+                  - "ATM_WITHDRAWAL"
+                  - "CASH_DEPOSIT"
+                  - "POS_PURCHASE"
+                  - "QR_PAYMENT"
+                  - "BILL_PAYMENT"
+                  - "RECHARGE"
+                  - "LOAN_EMI"
+                  - "INSURANCE_PREMIUM"
+                  - "INTERNATIONAL_PAYMENT"
+                  - "MERCHANT_PAYMENT"
       - name: amount
-        description: "Transaction amount."
+        description: "Transaction amount (rounded to 2 decimals)"
         tests:
           - not_null
-
-      - name: nameOrig_masked
-        description: "SHA-256 hashed sender account identifier."
+      - name: currency
+        description: "ISO currency code"
         tests:
           - not_null
-
-      - name: nameDest_masked
-        description: "SHA-256 hashed receiver account identifier."
+      - name: merchant_id
+        description: "Unique merchant identifier"
+      - name: merchant_name
+        description: "Human-readable merchant name"
+      - name: merchant_category
+        description: "Merchant category ENUM"
         tests:
           - not_null
-
-      - name: isFraud
-        description: "Fraud indicator from source system."
+      - name: country
+        description: "2-letter ISO country code"
         tests:
           - not_null
-
-      - name: isFlaggedFraud
-        description: "Flag for suspicious high-value fraud transactions."
+      - name: city
+        description: "City name"
         tests:
           - not_null
-
-      - name: amount_category
-        description: "Transaction amount bucket."
+      - name: device_id_masked
+        description: "SHA-256 masked device ID"
+      - name: ip_address_masked
+        description: "SHA-256 masked IP address"
+      - name: payment_channel
+        description: "Payment channel ENUM"
         tests:
           - not_null
-
+          - accepted_values:
+              arguments:
+                values:
+                  - "MOBILE_APP"
+                  - "WEB"
+                  - "POS_TERMINAL"
+                  - "ATM"
+                  - "BRANCH"
+                  - "API"
+      - name: payment_method
+        description: "Payment method ENUM"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "UPI"
+                  - "CARD"
+                  - "NETBANKING"
+                  - "WALLET"
+                  - "CASH"
+                  - "NEFT"
+                  - "RTGS"
+                  - "IMPS"
+      - name: fraud_score
+        description: "Fraud risk score 0-100"
+        tests:
+          - not_null
       - name: fraud_band
-        description: "Fraud risk classification."
+        description: "Fraud risk band"
         tests:
           - not_null
-
-      - name: processing_timestamp
-        description: "Timestamp when transaction was processed."
+          - accepted_values:
+              arguments:
+                values:
+                  - "LOW"
+                  - "MEDIUM"
+                  - "HIGH"
+                  - "CRITICAL"
+      - name: is_fraud
+        description: "Boolean fraud flag"
         tests:
           - not_null
-
-      - name: source_file
-        description: "Original source file."
-
-      - name: loaded_at
-        description: "Timestamp when dbt loaded the record."
+      - name: is_high_amount
+        description: "Boolean high amount flag"
         tests:
           - not_null
-
+      - name: action_required
+        description: "Required action"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "CLEAR"
+                  - "MONITOR"
+                  - "REVIEW"
+                  - "BLOCK"
       - name: data_source
-        description: "Pipeline source."
+        description: "Always 'batch_csv'"
         tests:
           - not_null
-
-  # ==========================================================
-  # STREAMING STAGING
-  # ==========================================================
+          - accepted_values:
+              arguments:
+                values:
+                  - "batch_csv"
+      - name: processing_timestamp
+        description: "PySpark processing timestamp"
+        tests:
+          - not_null
+      - name: loaded_at
+        description: "dbt load timestamp"
+        tests:
+          - not_null
 
   - name: stg_streaming_transactions
-    description: "Cleaned and standardized streaming transaction data."
-
+    description: >
+      Staged streaming transactions from Dataflow.
+      Master schema (26 columns), PII pre-masked by Dataflow.
+      Identical structure to stg_transactions.
     columns:
-
       - name: transaction_id
-        description: "Unique transaction identifier."
+        description: "Unique transaction ID"
         tests:
           - not_null
           - unique
-
       - name: event_timestamp
-        description: "Original event timestamp."
+        description: "When the transaction occurred"
         tests:
           - not_null
-
+      - name: transaction_date
+        description: "Date portion"
+        tests:
+          - not_null
       - name: customer_id_masked
-        description: "Masked customer identifier."
+        description: "SHA-256 masked customer ID"
         tests:
           - not_null
-
+      - name: receiver_id_masked
+        description: "SHA-256 masked receiver ID"
       - name: card_number_masked
-        description: "Masked card number."
-
-      - name: amount
-        description: "Transaction amount."
+        description: "SHA-256 masked card number"
+      - name: transaction_type
+        description: "Transaction type ENUM"
         tests:
           - not_null
-
+          - accepted_values:
+              arguments:
+                values:
+                  - "UPI"
+                  - "IMPS"
+                  - "NEFT"
+                  - "RTGS"
+                  - "WALLET"
+                  - "CREDIT_CARD"
+                  - "DEBIT_CARD"
+                  - "ATM_WITHDRAWAL"
+                  - "CASH_DEPOSIT"
+                  - "POS_PURCHASE"
+                  - "QR_PAYMENT"
+                  - "BILL_PAYMENT"
+                  - "RECHARGE"
+                  - "LOAN_EMI"
+                  - "INSURANCE_PREMIUM"
+                  - "INTERNATIONAL_PAYMENT"
+                  - "MERCHANT_PAYMENT"
+      - name: amount
+        description: "Transaction amount"
+        tests:
+          - not_null
       - name: currency
-        description: "Transaction currency."
-
+        description: "ISO currency code"
+        tests:
+          - not_null
+      - name: merchant_id
+        description: "Merchant identifier"
       - name: merchant_name
-        description: "Merchant name."
-
+        description: "Merchant name"
       - name: merchant_category
-        description: "Merchant category."
-
+        description: "Merchant category"
+        tests:
+          - not_null
       - name: country
-        description: "Country."
-
+        description: "ISO country code"
+        tests:
+          - not_null
       - name: city
-        description: "City."
-
-      - name: ip_address_masked
-        description: "Masked IP address."
-
+        description: "City name"
+        tests:
+          - not_null
       - name: device_id_masked
-        description: "Masked device identifier."
-
+        description: "SHA-256 masked device ID"
+      - name: ip_address_masked
+        description: "SHA-256 masked IP"
+      - name: payment_channel
+        description: "Payment channel"
+        tests:
+          - not_null
+      - name: payment_method
+        description: "Payment method"
+        tests:
+          - not_null
       - name: fraud_score
-        description: "Fraud score."
-
+        description: "Fraud risk score 0-100"
+        tests:
+          - not_null
       - name: fraud_band
-        description: "Fraud risk band."
-
-      - name: is_fraud_predicted
-        description: "Prediction generated by fraud model."
-
-      - name: processing_timestamp
-        description: "Streaming processing timestamp."
-
-      - name: loaded_at
-        description: "Timestamp when dbt loaded the record."
-
+        description: "Fraud risk band"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "LOW"
+                  - "MEDIUM"
+                  - "HIGH"
+                  - "CRITICAL"
+      - name: is_fraud
+        description: "Fraud flag"
+        tests:
+          - not_null
+      - name: is_high_amount
+        description: "High amount flag"
+        tests:
+          - not_null
+      - name: action_required
+        description: "Required action"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "CLEAR"
+                  - "MONITOR"
+                  - "REVIEW"
+                  - "BLOCK"
       - name: data_source
-        description: "Pipeline source."
+        description: "Always 'streaming_realtime'"
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - "streaming_realtime"
+      - name: processing_timestamp
+        description: "Dataflow processing timestamp"
+        tests:
+          - not_null
+      - name: loaded_at
+        description: "dbt load timestamp"
+        tests:
+          - not_null

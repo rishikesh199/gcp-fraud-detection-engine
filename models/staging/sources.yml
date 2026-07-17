@@ -1,77 +1,128 @@
-# ============================================================
-# File: models/staging/sources.yml
-# Purpose: Register raw BigQuery source tables
-# ============================================================
-
 version: 2
 
 sources:
   - name: fraud_raw
-
     database: fraud-detection-de-project
-
     schema: fraud_raw_dev
-
-    description: "Raw fraud transaction data loaded from Dataproc into BigQuery External Table."
+    description: "Raw data from batch (PySpark) and streaming (Dataflow) pipelines"
 
     tables:
-
       - name: ext_batch_transactions
-
-        description: "External table pointing to processed Parquet files stored in GCS."
-
+        description: >
+          External table over PySpark Parquet output.
+          Contains batch CSV data processed through PySpark pipeline.
+          Schema: 26 columns (master schema, PII masked).
+          Partitioned by transaction_date (Hive partitioning).
         columns:
-
-          - name: step
-            description: "Transaction step number."
-
-          - name: type
-            description: "Type of transaction."
-
+          - name: transaction_id
+            description: "Unique transaction ID (TXN-uuid)"
+          - name: event_timestamp
+            description: "When the transaction occurred"
+          - name: transaction_date
+            description: "Date portion for partitioning"
+          - name: customer_id_masked
+            description: "SHA-256 masked customer ID (16 chars)"
+          - name: receiver_id_masked
+            description: "SHA-256 masked receiver account ID"
+          - name: card_number_masked
+            description: "SHA-256 masked card number"
+          - name: transaction_type
+            description: "Transaction type ENUM (UPI, IMPS, NEFT, etc.)"
           - name: amount
-            description: "Transaction amount."
-
-          - name: oldbalanceOrg
-            description: "Sender balance before transaction."
-
-          - name: newbalanceOrig
-            description: "Sender balance after transaction."
-
-          - name: oldbalanceDest
-            description: "Receiver balance before transaction."
-
-          - name: newbalanceDest
-            description: "Receiver balance after transaction."
-
-          - name: isFraud
-            description: "Fraud flag from source system."
-
-          - name: isFlaggedFraud
-            description: "High-value fraud flag."
-
-          - name: nameOrig_masked
-            description: "SHA-256 masked sender identifier."
-
-          - name: nameDest_masked
-            description: "SHA-256 masked receiver identifier."
-
-          - name: amount_category
-            description: "Transaction amount category."
-
-          - name: is_high_amount
-            description: "Indicates whether transaction amount is high."
-
-          - name: balance_change
-            description: "Net balance change."
-
+            description: "Transaction amount (FLOAT64)"
+          - name: currency
+            description: "ISO currency code (INR, USD, GBP, etc.)"
+          - name: merchant_id
+            description: "Unique merchant identifier"
+          - name: merchant_name
+            description: "Human-readable merchant name"
+          - name: merchant_category
+            description: "Merchant category ENUM (GROCERY, ELECTRONICS, etc.)"
+          - name: country
+            description: "2-letter ISO country code"
+          - name: city
+            description: "City name"
+          - name: device_id_masked
+            description: "SHA-256 masked device ID"
+          - name: ip_address_masked
+            description: "SHA-256 masked IP address"
+          - name: payment_channel
+            description: "Payment channel (MOBILE_APP, WEB, POS_TERMINAL, etc.)"
+          - name: payment_method
+            description: "Payment method (UPI, CARD, NETBANKING, etc.)"
+          - name: fraud_score
+            description: "Fraud risk score 0-100"
           - name: fraud_band
-            description: "Fraud risk category."
-
-          - name: processing_timestamp
-            description: "Timestamp when PySpark processed the record."
-
+            description: "Fraud band: LOW, MEDIUM, HIGH, CRITICAL"
+          - name: is_fraud
+            description: "Boolean fraud flag"
+          - name: is_high_amount
+            description: "Boolean high amount flag"
+          - name: action_required
+            description: "Action: CLEAR, MONITOR, REVIEW, BLOCK"
           - name: data_source
-            description: "Pipeline source."
-
+            description: "Always 'batch_csv' for this table"
+          - name: processing_timestamp
+            description: "When PySpark processed this record"
           - name: loaded_at
-            description: "Timestamp when record was loaded."
+            description: "When loaded into BigQuery"
+
+      - name: raw_streaming_transactions
+        description: >
+          Streaming transactions from Dataflow pipeline.
+          Contains real-time data processed through Pub/Sub → Dataflow.
+          Schema: 26 columns (master schema, PII masked).
+          Partitioned by transaction_date, clustered by transaction_type, fraud_band, country.
+        columns:
+          - name: transaction_id
+            description: "Unique transaction ID (TXN-uuid)"
+          - name: event_timestamp
+            description: "When the transaction occurred"
+          - name: transaction_date
+            description: "Date portion for partitioning"
+          - name: customer_id_masked
+            description: "SHA-256 masked customer ID (16 chars)"
+          - name: receiver_id_masked
+            description: "SHA-256 masked receiver account ID"
+          - name: card_number_masked
+            description: "SHA-256 masked card number"
+          - name: transaction_type
+            description: "Transaction type ENUM"
+          - name: amount
+            description: "Transaction amount (FLOAT64)"
+          - name: currency
+            description: "ISO currency code"
+          - name: merchant_id
+            description: "Unique merchant identifier"
+          - name: merchant_name
+            description: "Human-readable merchant name"
+          - name: merchant_category
+            description: "Merchant category ENUM"
+          - name: country
+            description: "2-letter ISO country code"
+          - name: city
+            description: "City name"
+          - name: device_id_masked
+            description: "SHA-256 masked device ID"
+          - name: ip_address_masked
+            description: "SHA-256 masked IP address"
+          - name: payment_channel
+            description: "Payment channel ENUM"
+          - name: payment_method
+            description: "Payment method ENUM"
+          - name: fraud_score
+            description: "Fraud risk score 0-100"
+          - name: fraud_band
+            description: "Fraud band: LOW, MEDIUM, HIGH, CRITICAL"
+          - name: is_fraud
+            description: "Boolean fraud flag"
+          - name: is_high_amount
+            description: "Boolean high amount flag"
+          - name: action_required
+            description: "Action: CLEAR, MONITOR, REVIEW, BLOCK"
+          - name: data_source
+            description: "Always 'streaming_realtime' for this table"
+          - name: processing_timestamp
+            description: "When Dataflow processed this record"
+          - name: loaded_at
+            description: "When loaded into BigQuery"

@@ -1,6 +1,6 @@
 -- ============================================================
--- Mart Model: dim_transaction_type
--- Purpose: Transaction type dimension with fraud analysis
+-- Mart Model: dim_geography
+-- Purpose: Geographic dimension with fraud hotspot analysis
 -- Source: fct_fraud_transactions
 -- ============================================================
 
@@ -15,40 +15,42 @@ WITH fact AS (
 )
 
 SELECT
-    transaction_type,
+    country,
+    city,
 
     -- Volume
     COUNT(*)                                              AS total_transactions,
     COUNT(DISTINCT customer_id_masked)                    AS unique_customers,
-    COUNT(DISTINCT transaction_date)                      AS active_days,
 
     -- Amount
     ROUND(SUM(amount), 2)                                 AS total_amount,
     ROUND(AVG(amount), 2)                                 AS avg_amount,
-    ROUND(MAX(amount), 2)                                 AS max_amount,
-    ROUND(MIN(amount), 2)                                 AS min_amount,
 
-    -- Fraud
+    -- Fraud analysis
     COUNTIF(is_fraud)                                     AS fraud_transactions,
     ROUND(COUNTIF(is_fraud) * 100.0 / NULLIF(COUNT(*), 0), 2) AS fraud_rate_pct,
     ROUND(SUM(CASE WHEN is_fraud THEN amount ELSE 0 END), 2) AS fraud_amount,
-
-    -- High amount
-    COUNTIF(is_high_amount)                               AS high_amount_count,
+    ROUND(AVG(fraud_score), 1)                            AS avg_fraud_score,
 
     -- Risk distribution
     COUNTIF(fraud_band = 'CRITICAL')                      AS critical_count,
     COUNTIF(fraud_band = 'HIGH')                          AS high_count,
 
-    -- Source breakdown
-    COUNTIF(data_source = 'batch_csv')                    AS batch_count,
-    COUNTIF(data_source = 'streaming_realtime')           AS streaming_count,
+    -- Top transaction types in this location
+    COUNT(DISTINCT transaction_type)                      AS unique_transaction_types,
 
-    -- Time range
-    MIN(transaction_date)                                 AS first_transaction_date,
-    MAX(transaction_date)                                 AS last_transaction_date,
+    -- International flag
+    CASE WHEN country != 'IN' THEN TRUE ELSE FALSE END    AS is_international,
+
+    -- Location risk level
+    CASE
+        WHEN COUNTIF(is_fraud) * 100.0 / NULLIF(COUNT(*), 0) > 20 THEN 'FRAUD_HOTSPOT'
+        WHEN COUNTIF(is_fraud) * 100.0 / NULLIF(COUNT(*), 0) > 10 THEN 'HIGH_RISK'
+        WHEN COUNTIF(is_fraud) * 100.0 / NULLIF(COUNT(*), 0) > 5  THEN 'ELEVATED'
+        ELSE 'NORMAL'
+    END                                                   AS location_risk_level,
 
     CURRENT_TIMESTAMP()                                   AS last_refreshed
 
 FROM fact
-GROUP BY transaction_type
+GROUP BY country, city
