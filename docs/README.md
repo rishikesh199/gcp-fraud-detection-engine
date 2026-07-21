@@ -1,16 +1,13 @@
-# 📚 Documentation
+# Project Documentation & Portal
 
-This directory contains project documentation, architecture diagrams, and guides.
+## 📌 Enterprise Purpose
+Comprehensive documentation is the backbone of any maintainable enterprise system. This directory stores the deep architectural documentation, interactive HTML portals, and static assets (images, system diagrams) that explain the inner workings of the Fraud Detection Engine.
 
-## What's Inside
-- `architecture.md` — Detailed system architecture documentation
-- `setup_guide.md` — Step-by-step setup instructions
-- `data_dictionary.md` — Column descriptions and data types
-- `runbook.md` — Operational runbook (troubleshooting, monitoring)
-- `cost_analysis.md` — GCP cost breakdown and optimization tips
-- `images/` — Architecture diagrams and screenshots
+## 📂 Contents
+- **Architecture Diagrams:** High-level system designs, VPC network boundaries, and Lambda Architecture workflows.
+- **Data Dictionaries:** Detailed definitions of the 26-column master schema and the dbt star schema output.
+- **Runbooks:** Step-by-step guides for Disaster Recovery (e.g., how to replay Dead Letter Queue messages).
+- **HTML Portal:** The self-hosted, interactive developer portal (`index.html`, `commands.html`, `script-catalog.html`).
 
-## Quick Links
-- [Architecture Overview](architecture.md)
-- [Setup Guide](setup_guide.md)
-- [Data Dictionary](data_dictionary.md)
+## 🛠️ Maintenance Guidelines
+Whenever a structural change is made to the Terraform infrastructure, BigQuery schema, or Airflow DAG execution order, the corresponding diagram and runbook in this `/docs` folder **must** be updated simultaneously in the same Pull Request.
