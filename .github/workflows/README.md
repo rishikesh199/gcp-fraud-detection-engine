@@ -1,29 +1,23 @@
-# 🔁 GitHub Actions — CI/CD Workflows
+# CI/CD Pipelines (GitHub Actions)
 
-This directory contains **GitHub Actions** workflow definitions for automated CI/CD.
+## 📌 Enterprise Purpose
+This module contains the automated Continuous Integration and Continuous Deployment (CI/CD) pipelines. In an enterprise data engineering environment, pushing untested code can corrupt the data warehouse or break critical streaming pipelines. These workflows ensure that all code is rigorously tested, formatted, and validated before being merged into the `main` branch.
 
-## What's Inside
-- `ci.yml` — Continuous Integration (lint, test on every push)
-- `deploy-streaming.yml` — Deploy Dataflow streaming pipeline
-- `deploy-batch.yml` — Deploy PySpark jobs to GCS
-- `terraform-plan.yml` — Terraform plan on PR (preview changes)
-- `terraform-apply.yml` — Terraform apply on merge to main
+## 🔄 Automated Workflows
 
-## CI Pipeline (ci.yml)
-Triggered on: Every push and pull request
-1. Checkout code
-2. Setup Python
-3. Install dependencies
-4. Run linting (flake8/ruff)
-5. Run unit tests (pytest)
-6. Report results
+### 1. Terraform Plan & Validation
+- **Trigger:** Pull Request to `main`.
+- **Purpose:** Runs `terraform fmt -check`, `terraform validate`, and `terraform plan`. It outputs the infrastructure changes directly into the PR comments, preventing accidental cloud resource destruction.
 
-## CD Pipeline (deploy-*.yml)
-Triggered on: Merge to main branch
-1. Authenticate to GCP (Workload Identity Federation)
-2. Deploy code artifacts to GCS
-3. Update/restart services as needed
+### 2. dbt CI Testing
+- **Trigger:** Pull Request modifying `/dbt_fraud/**`.
+- **Purpose:** Compiles the dbt SQL models (`dbt compile`) and runs data quality tests (`dbt test`) against a temporary staging dataset in BigQuery to ensure new logic doesn't break existing facts and dimensions.
 
-## Authentication
-Uses **Workload Identity Federation** (no service account keys stored!) — 
-sa-github-actions-fraud-dev service account.
+### 3. Python Unit Testing (Pytest)
+- **Trigger:** Push to `main` or PR.
+- **Purpose:** Executes Pytest on the `/tests` directory to validate the PySpark UDFs, Dataflow DoFns, and the Data Generator logic.
+
+## 📦 Tech Stack
+- **Platform:** GitHub Actions (`.yml`)
+- **Runners:** `ubuntu-latest`
+- **Secrets Management:** GitHub Action Secrets (Injecting GCP Service Account JSON keys).
