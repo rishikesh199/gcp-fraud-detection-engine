@@ -33,25 +33,24 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "UPI"
-                  - "IMPS"
-                  - "NEFT"
-                  - "RTGS"
-                  - "WALLET"
-                  - "CREDIT_CARD"
-                  - "DEBIT_CARD"
-                  - "ATM_WITHDRAWAL"
-                  - "CASH_DEPOSIT"
-                  - "POS_PURCHASE"
-                  - "QR_PAYMENT"
-                  - "BILL_PAYMENT"
-                  - "RECHARGE"
-                  - "LOAN_EMI"
-                  - "INSURANCE_PREMIUM"
-                  - "INTERNATIONAL_PAYMENT"
-                  - "MERCHANT_PAYMENT"
+              values:
+                - "UPI"
+                - "IMPS"
+                - "NEFT"
+                - "RTGS"
+                - "WALLET"
+                - "CREDIT_CARD"
+                - "DEBIT_CARD"
+                - "ATM_WITHDRAWAL"
+                - "CASH_DEPOSIT"
+                - "POS_PURCHASE"
+                - "QR_PAYMENT"
+                - "BILL_PAYMENT"
+                - "RECHARGE"
+                - "LOAN_EMI"
+                - "INSURANCE_PREMIUM"
+                - "INTERNATIONAL_PAYMENT"
+                - "MERCHANT_PAYMENT"
       - name: amount
         description: "Transaction amount (rounded to 2 decimals)"
         tests:
@@ -85,29 +84,27 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "MOBILE_APP"
-                  - "WEB"
-                  - "POS_TERMINAL"
-                  - "ATM"
-                  - "BRANCH"
-                  - "API"
+              values:
+                - "MOBILE_APP"
+                - "WEB"
+                - "POS_TERMINAL"
+                - "ATM"
+                - "BRANCH"
+                - "API"
       - name: payment_method
         description: "Payment method ENUM"
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "UPI"
-                  - "CARD"
-                  - "NETBANKING"
-                  - "WALLET"
-                  - "CASH"
-                  - "NEFT"
-                  - "RTGS"
-                  - "IMPS"
+              values:
+                - "UPI"
+                - "CARD"
+                - "NETBANKING"
+                - "WALLET"
+                - "CASH"
+                - "NEFT"
+                - "RTGS"
+                - "IMPS"
       - name: fraud_score
         description: "Fraud risk score 0-100"
         tests:
@@ -117,12 +114,11 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "LOW"
-                  - "MEDIUM"
-                  - "HIGH"
-                  - "CRITICAL"
+              values:
+                - "LOW"
+                - "MEDIUM"
+                - "HIGH"
+                - "CRITICAL"
       - name: is_fraud
         description: "Boolean fraud flag"
         tests:
@@ -136,20 +132,18 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "CLEAR"
-                  - "MONITOR"
-                  - "REVIEW"
-                  - "BLOCK"
+              values:
+                - "CLEAR"
+                - "MONITOR"
+                - "REVIEW"
+                - "BLOCK"
       - name: data_source
         description: "Always 'batch_csv'"
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "batch_csv"
+              values:
+                - "batch_csv"
       - name: processing_timestamp
         description: "PySpark processing timestamp"
         tests:
@@ -191,25 +185,24 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "UPI"
-                  - "IMPS"
-                  - "NEFT"
-                  - "RTGS"
-                  - "WALLET"
-                  - "CREDIT_CARD"
-                  - "DEBIT_CARD"
-                  - "ATM_WITHDRAWAL"
-                  - "CASH_DEPOSIT"
-                  - "POS_PURCHASE"
-                  - "QR_PAYMENT"
-                  - "BILL_PAYMENT"
-                  - "RECHARGE"
-                  - "LOAN_EMI"
-                  - "INSURANCE_PREMIUM"
-                  - "INTERNATIONAL_PAYMENT"
-                  - "MERCHANT_PAYMENT"
+              values:
+                - "UPI"
+                - "IMPS"
+                - "NEFT"
+                - "RTGS"
+                - "WALLET"
+                - "CREDIT_CARD"
+                - "DEBIT_CARD"
+                - "ATM_WITHDRAWAL"
+                - "CASH_DEPOSIT"
+                - "POS_PURCHASE"
+                - "QR_PAYMENT"
+                - "BILL_PAYMENT"
+                - "RECHARGE"
+                - "LOAN_EMI"
+                - "INSURANCE_PREMIUM"
+                - "INTERNATIONAL_PAYMENT"
+                - "MERCHANT_PAYMENT"
       - name: amount
         description: "Transaction amount"
         tests:
@@ -255,12 +248,11 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "LOW"
-                  - "MEDIUM"
-                  - "HIGH"
-                  - "CRITICAL"
+              values:
+                - "LOW"
+                - "MEDIUM"
+                - "HIGH"
+                - "CRITICAL"
       - name: is_fraud
         description: "Fraud flag"
         tests:
@@ -274,20 +266,18 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "CLEAR"
-                  - "MONITOR"
-                  - "REVIEW"
-                  - "BLOCK"
+              values:
+                - "CLEAR"
+                - "MONITOR"
+                - "REVIEW"
+                - "BLOCK"
       - name: data_source
         description: "Always 'streaming_realtime'"
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "streaming_realtime"
+              values:
+                - "streaming_realtime"
       - name: processing_timestamp
         description: "Dataflow processing timestamp"
         tests:

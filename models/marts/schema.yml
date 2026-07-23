@@ -45,12 +45,11 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "LOW"
-                  - "MEDIUM"
-                  - "HIGH"
-                  - "CRITICAL"
+              values:
+                - "LOW"
+                - "MEDIUM"
+                - "HIGH"
+                - "CRITICAL"
       - name: is_fraud
         description: "Fraud flag"
         tests:
@@ -60,21 +59,19 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "CLEAR"
-                  - "MONITOR"
-                  - "REVIEW"
-                  - "BLOCK"
+              values:
+                - "CLEAR"
+                - "MONITOR"
+                - "REVIEW"
+                - "BLOCK"
       - name: data_source
         description: "batch_csv or streaming_realtime"
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "batch_csv"
-                  - "streaming_realtime"
+              values:
+                - "batch_csv"
+                - "streaming_realtime"
       - name: transaction_month
         description: "YYYY-MM format for trend analysis"
         tests:
@@ -157,12 +154,11 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "LOW_RISK"
-                  - "MEDIUM_RISK"
-                  - "HIGH_RISK"
-                  - "VERY_HIGH_RISK"
+              values:
+                - "LOW_RISK"
+                - "MEDIUM_RISK"
+                - "HIGH_RISK"
+                - "VERY_HIGH_RISK"
 
   - name: dim_geography
     description: >
@@ -186,9 +182,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              arguments:
-                values:
-                  - "NORMAL"
-                  - "ELEVATED"
-                  - "HIGH_RISK"
-                  - "FRAUD_HOTSPOT"
+              values:
+                - "NORMAL"
+                - "ELEVATED"
+                - "HIGH_RISK"
+                - "FRAUD_HOTSPOT"
