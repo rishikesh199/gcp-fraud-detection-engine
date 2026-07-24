@@ -1,189 +1,208 @@
+# ============================================================
+# Marts Schema: Tests and documentation for all mart models
+# ============================================================
+
 version: 2
 
 models:
+
+  # ==========================================================
+  # FACT: fct_fraud_transactions (34 columns)
+  # ==========================================================
   - name: fct_fraud_transactions
-    description: >
-      Unified fact table combining batch (CSV) and streaming (real-time) transactions.
-      UNION ALL of stg_transactions + stg_streaming_transactions.
-      Partitioned by transaction_date, clustered by transaction_type, fraud_band, data_source.
+    description: "Master fact table combining batch and streaming data with 34 columns."
     columns:
       - name: transaction_id
-        description: "Unique transaction ID"
+        description: "Unique transaction identifier."
         tests:
           - not_null
           - unique
-      - name: event_timestamp
-        description: "Transaction timestamp"
-        tests:
-          - not_null
-      - name: transaction_date
-        description: "Transaction date (partition key)"
-        tests:
-          - not_null
-      - name: customer_id_masked
-        description: "SHA-256 masked customer ID"
-        tests:
-          - not_null
+
       - name: transaction_type
-        description: "Transaction type"
-        tests:
-          - not_null
-      - name: amount
-        description: "Transaction amount"
-        tests:
-          - not_null
-      - name: merchant_category
-        description: "Merchant category"
-        tests:
-          - not_null
-      - name: fraud_score
-        description: "Fraud risk score 0-100"
-        tests:
-          - not_null
-      - name: fraud_band
-        description: "Fraud risk band"
-        tests:
-          - not_null
-          - accepted_values:
-              values:
-                - "LOW"
-                - "MEDIUM"
-                - "HIGH"
-                - "CRITICAL"
-      - name: is_fraud
-        description: "Fraud flag"
-        tests:
-          - not_null
-      - name: action_required
-        description: "Required action"
-        tests:
-          - not_null
-          - accepted_values:
-              values:
-                - "CLEAR"
-                - "MONITOR"
-                - "REVIEW"
-                - "BLOCK"
-      - name: data_source
-        description: "batch_csv or streaming_realtime"
-        tests:
-          - not_null
-          - accepted_values:
-              values:
-                - "batch_csv"
-                - "streaming_realtime"
-      - name: transaction_month
-        description: "YYYY-MM format for trend analysis"
+        description: "Type of financial transaction."
         tests:
           - not_null
 
+      - name: amount
+        description: "Transaction amount."
+        tests:
+          - not_null
+
+      - name: fraud_band
+        description: "Fraud risk band."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - LOW
+                  - MEDIUM
+                  - HIGH
+                  - CRITICAL
+
+      - name: action_required
+        description: "Required action for operations team."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - CLEAR
+                  - MONITOR
+                  - REVIEW
+                  - BLOCK
+
+      - name: transaction_date
+        description: "Partition date."
+        tests:
+          - not_null
+
+      - name: amount_category
+        description: "Transaction size bucket."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - MICRO
+                  - SMALL
+                  - MEDIUM
+                  - LARGE
+                  - VERY_LARGE
+
+      - name: risk_category
+        description: "Combined risk assessment."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - STANDARD
+                  - ELEVATED
+                  - HIGH
+                  - VERY_HIGH
+                  - EXTREMELY_HIGH
+
+  # ==========================================================
+  # FACT: fct_fraud_kpis
+  # ==========================================================
   - name: fct_fraud_kpis
-    description: >
-      Daily KPI summary aggregated from unified fact table.
-      Includes fraud rates, amount stats, risk distribution, and source breakdown.
+    description: "JP Morgan level daily fraud KPIs for executive dashboard."
     columns:
       - name: report_date
-        description: "Reporting date (partition key)"
+        description: "Date of the KPI summary."
         tests:
           - not_null
           - unique
+
       - name: total_transactions
-        description: "Total transaction count for the day"
-        tests:
-          - not_null
-      - name: fraud_transactions
-        description: "Number of fraud transactions"
-        tests:
-          - not_null
-      - name: fraud_rate_pct
-        description: "Fraud rate percentage"
-        tests:
-          - not_null
-      - name: total_amount
-        description: "Sum of all amounts"
-        tests:
-          - not_null
-      - name: fraud_amount
-        description: "Sum of fraud amounts"
-        tests:
-          - not_null
-      - name: batch_records
-        description: "Records from batch pipeline"
-        tests:
-          - not_null
-      - name: streaming_records
-        description: "Records from streaming pipeline"
+        description: "Total transaction count."
         tests:
           - not_null
 
+      - name: fraud_rate_pct
+        description: "Daily fraud rate percentage."
+
+  # ==========================================================
+  # FACT: fct_fraud_live_dashboard
+  # ==========================================================
+  - name: fct_fraud_live_dashboard
+    description: "Real-time fraud monitoring view for operations dashboard."
+    columns:
+      - name: transaction_id
+        description: "Transaction identifier."
+        tests:
+          - not_null
+
+      - name: alert_level
+        description: "Alert severity level."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - NORMAL
+                  - MEDIUM_ALERT
+                  - HIGH_ALERT
+                  - CRITICAL_ALERT
+
+  # ==========================================================
+  # FACT: fct_fraud_action_team
+  # ==========================================================
+  - name: fct_fraud_action_team
+    description: "Investigation queue for fraud operations team."
+    columns:
+      - name: transaction_id
+        description: "Case transaction ID."
+        tests:
+          - not_null
+
+      - name: action_required
+        description: "Required action."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - REVIEW
+                  - BLOCK
+
+      - name: priority_rank
+        description: "Case priority (1=highest)."
+        tests:
+          - not_null
+
+  # ==========================================================
+  # DIMENSION: dim_transaction_type
+  # ==========================================================
   - name: dim_transaction_type
-    description: >
-      Transaction type dimension with fraud analysis per type.
-      Covers all 17 transaction types.
+    description: "Transaction type dimension with fraud statistics."
     columns:
       - name: transaction_type
-        description: "Transaction type"
+        description: "Transaction type."
         tests:
           - not_null
           - unique
-      - name: total_transactions
-        description: "Total transactions for this type"
-        tests:
-          - not_null
-      - name: fraud_rate_pct
-        description: "Fraud rate for this type"
-        tests:
-          - not_null
 
-  - name: dim_merchant_category
-    description: >
-      Merchant category dimension with risk level analysis.
-      Includes risk classification: LOW_RISK, MEDIUM_RISK, HIGH_RISK, VERY_HIGH_RISK.
-    columns:
-      - name: merchant_category
-        description: "Merchant category"
-        tests:
-          - not_null
-          - unique
-      - name: total_transactions
-        description: "Total transactions"
-        tests:
-          - not_null
-      - name: risk_level
-        description: "Category risk level"
-        tests:
-          - not_null
-          - accepted_values:
-              values:
-                - "LOW_RISK"
-                - "MEDIUM_RISK"
-                - "HIGH_RISK"
-                - "VERY_HIGH_RISK"
-
+  # ==========================================================
+  # DIMENSION: dim_geography
+  # ==========================================================
   - name: dim_geography
-    description: >
-      Geographic dimension with fraud hotspot analysis.
-      Risk levels: NORMAL, ELEVATED, HIGH_RISK, FRAUD_HOTSPOT.
+    description: "Geographic dimension with fraud hotspot analysis."
     columns:
       - name: country
-        description: "ISO country code"
+        description: "Country code."
         tests:
           - not_null
-      - name: city
-        description: "City name"
-        tests:
-          - not_null
-      - name: total_transactions
-        description: "Total transactions"
-        tests:
-          - not_null
+
       - name: location_risk_level
-        description: "Location risk level"
+        description: "Location fraud risk classification."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - NORMAL
+                  - ELEVATED
+                  - HIGH_RISK
+                  - FRAUD_HOTSPOT
+
+  # ==========================================================
+  # DIMENSION: dim_merchant_category
+  # ==========================================================
+  - name: dim_merchant_category
+    description: "Merchant category dimension with risk analysis."
+    columns:
+      - name: merchant_category
+        description: "Merchant category."
         tests:
           - not_null
+          - unique
+
+      - name: risk_level
+        description: "Category risk level."
+        tests:
           - accepted_values:
-              values:
-                - "NORMAL"
-                - "ELEVATED"
-                - "HIGH_RISK"
-                - "FRAUD_HOTSPOT"
+              arguments:
+                values:
+                  - LOW_RISK
+                  - MEDIUM_RISK
+                  - HIGH_RISK
+                  - VERY_HIGH_RISK

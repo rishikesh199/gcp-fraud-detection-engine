@@ -1,45 +1,58 @@
 -- ============================================================
--- Staging Model: stg_streaming_transactions (Streaming Path)
--- Source: fraud_raw.raw_streaming_transactions (Dataflow)
--- Schema: Master schema (26 cols, PII already masked by Dataflow)
+-- Staging Model: stg_streaming_transactions
+-- Source: raw_streaming_transactions (Dataflow → BQ)
+-- Output: 29 columns (27 raw + transaction_date + loaded_at)
 -- ============================================================
 
-WITH source AS (
-    SELECT * FROM {{ source('fraud_raw', 'raw_streaming_transactions') }}
-    WHERE transaction_id IS NOT NULL
-      AND amount > 0
-      AND amount < 5000000
-),
+{{
+    config(
+        tags=['streaming', 'staging']
+    )
+}}
 
-cleaned AS (
-    SELECT
-        transaction_id,
-        event_timestamp,
-        transaction_date,
-        customer_id_masked,
-        receiver_id_masked,
-        card_number_masked,
-        UPPER(TRIM(transaction_type))     AS transaction_type,
-        ROUND(amount, 2)                  AS amount,
-        UPPER(TRIM(COALESCE(currency, 'INR'))) AS currency,
-        merchant_id,
-        TRIM(merchant_name)               AS merchant_name,
-        UPPER(TRIM(COALESCE(merchant_category, 'UNKNOWN'))) AS merchant_category,
-        UPPER(TRIM(COALESCE(country, 'IN'))) AS country,
-        TRIM(COALESCE(city, 'UNKNOWN'))   AS city,
-        device_id_masked,
-        ip_address_masked,
-        UPPER(TRIM(COALESCE(payment_channel, 'MOBILE_APP'))) AS payment_channel,
-        UPPER(TRIM(COALESCE(payment_method, 'UPI'))) AS payment_method,
-        COALESCE(fraud_score, 0)          AS fraud_score,
-        UPPER(TRIM(COALESCE(fraud_band, 'LOW'))) AS fraud_band,
-        COALESCE(is_fraud, FALSE)         AS is_fraud,
-        COALESCE(is_high_amount, FALSE)   AS is_high_amount,
-        UPPER(TRIM(COALESCE(action_required, 'CLEAR'))) AS action_required,
-        'streaming_realtime'              AS data_source,
-        COALESCE(processing_timestamp, CURRENT_TIMESTAMP()) AS processing_timestamp,
-        CURRENT_TIMESTAMP()               AS loaded_at
-    FROM source
-)
+SELECT
+    -- 1-2: Identity
+    transaction_id,
+    event_timestamp,
 
-SELECT * FROM cleaned
+    -- 3-12: Transaction Details
+    transaction_type,
+    ROUND(amount, 2) AS amount,
+    currency,
+    merchant_id,
+    TRIM(merchant_name) AS merchant_name,
+    UPPER(TRIM(COALESCE(merchant_category, 'UNKNOWN'))) AS merchant_category,
+    UPPER(TRIM(COALESCE(country, 'IN'))) AS country,
+    TRIM(COALESCE(city, 'UNKNOWN')) AS city,
+    payment_channel,
+    payment_method,
+
+    -- 13-15: Behavioral Analytics
+    is_vpn_used,
+    login_to_checkout_sec,
+    bot_behavior_flag,
+
+    -- 16-20: Masked PII
+    customer_id_masked,
+    receiver_id_masked,
+    card_number_masked,
+    device_id_masked,
+    ip_address_masked,
+
+    -- 21-25: Fraud Analytics (Computed by Dataflow)
+    fraud_score,
+    fraud_band,
+    is_fraud,
+    is_high_amount,
+    action_required,
+
+    -- 26-27: Pipeline Metadata
+    data_source,
+    processing_timestamp,
+
+    -- 28-29: dbt Metadata (added by dbt)
+    DATE(event_timestamp) AS transaction_date,
+    CURRENT_TIMESTAMP() AS loaded_at
+
+FROM {{ source('fraud_raw', 'raw_streaming_transactions') }}
+WHERE transaction_id IS NOT NULL
