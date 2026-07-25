@@ -1,0 +1,83 @@
+user:
+  outputs:
+    default:
+      keyfile_json:
+        auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+        auth_uri: https://accounts.google.com/o/oauth2/auth
+        client_email: sa-dbt-fraud-dev-fraud-detecti@fraud-detection-de-project.iam.gserviceaccount.com
+        client_id: '112686104476679019633'
+        client_x509_cert_url: https://www.googleapis.com/robot/v1/metadata/x509/sa-dbt-fraud-dev-fraud-detecti%40fraud-detection-de-project.iam.gserviceaccount.com
+        private_key: '-----BEGIN PRIVATE KEY-----
+
+          MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDWEaDC7aXoJ806
+
+          ideDoRglgolkPNBHzV/+f94n3Mkxfxmsh88usaHSeMByt//5NruOopN9R8n64PJg
+
+          0vdiMbumC1CFXk3Fu6Y3Sdgeg6zRH2W+ZvEWHQWPF2cAO19NPXq77UEw+jf/CFrx
+
+          PnFxfHoJf+EtxgxgDOOvA4FmtvFkhXrHd4HI3Vyl9wFsODp0VLnuEHBM3bXvl6dz
+
+          QjPzVfP3dXUnhfZZDG7M9cXTokl+WY5s55uxRY0R3zb6Txdpb7osjSFpxgQzUXt7
+
+          OelW7IPb3ZgzaHNZJqa/7VSzjXkw5qKvpAOYKia1HemnO5U+vSlWZJCyN8LX9wk2
+
+          qHx6K2gtAgMBAAECggEACVkaUf89vcfkxh5YQab3XnmQu8aNRxPSK6BBPv1jV2l+
+
+          lGwXB8N5cEiWPHKjiqoxgfbAheAfxl7Fxthyz1Nu2qWA15CFyR46+Awd+qS//bin
+
+          LhIU8hgqjEdp18OmYEGdVyqMeVgouaOpEQLe9YujHdoU2ijDyC5ktoy3if9wLPYz
+
+          /LFHxC8jdVqIxoFCaOjnarGXtlm3/C+B0R9yZLLC06E8hR3zbOyEq/JXvg05wnL3
+
+          DC+g6hAhIn81lFTw+/C8mkPwwbtE8DrHO4rprev2T7MItgfNxM+5HnNoGE7JOkr8
+
+          wurVUTFrPjt1kKfRlr5JQOGioCBmc7eY2AToB9uWcwKBgQDy0KKgnXwn1N6rZ2ak
+
+          NcH6uTZTl9mK9iJv18LIK2nCSYoZBlE+0r7pu4bC5coU2pckpXCr8ecxeD2SITBj
+
+          eySloKYLg7Cdz84gzr+JY8LSt6F4MHWmL/EmwtSCwHALTr0dVoMTsnbMcgiZEeL4
+
+          1bDgi58wGD1AFHAgr3TQjQJscwKBgQDhsWTD6cafQ6WRVI+rSTwMbgTzIFrTKzzz
+
+          yG6oDI22r1qYxdNIclDGtd7IEh6slj29W4/ZPg3g/wLlskvbOCj8ksumH4tspDYp
+
+          S326LRHb9xgDQZSsEA5ae/H5824DNLut15zpxsYtxgDt2twppeUUBx2exfx2dnOZ
+
+          bNPB+GlQ3wKBgQCt0vXZDWSIDzeodMlh3KoVFunxRc+ST0mvz0G9knaPg5289GzN
+
+          EIljQb/jXiUgcKuqrFTQgsgC/hT1u5SsYseFWlAEBi41i0IA8oDjlesudg69v9M5
+
+          OTDlkqwXPjP3pFJ14izLuQKasTe+fLODd1a8KLe48mFGslriyzhQ4+FMSQKBgB6b
+
+          qEbJlZ5T1kh3Z2SbcgFdil5OrQKmgoWtURSJX06/SVIewiC5ICtSzvvjOTW+ynC7
+
+          0i5sNAWnkAUGwTLh0u0uG2BUNtxtCMtg6ZQuOJXUVPVcF4WeR9QNqyty0CCvLiTN
+
+          cQJjas0aZVXcsK8VSJQGwwWdZDfMqLDOCYns3puRAoGANfA4aixJZQKaxDMK0Wyq
+
+          crmqXvVYbnGWu7V2lsr5REbATgF+pETE1fymWLmizyE39cC8Y0TUfb3wNVPiPQAN
+
+          CDiDWhnOvZFYLygettggM+TuLxRM0eB9QEqr9Y7s/7iGJO8p3csjv7PPGHkfkiro
+
+          LakMs/LTt3v148p6ghqRIPU=
+
+          -----END PRIVATE KEY-----
+
+          '
+        private_key_id: 7af8f91141823d491e6327ba4a0699e9b54c6adc
+        project_id: fraud-detection-de-project
+        token_uri: https://oauth2.googleapis.com/token
+        type: service_account
+      location: asia-south1
+      method: service-account-json
+      project: fraud-detection-de-project
+      schema: fraud_staging_dev
+      scopes:
+      - https://www.googleapis.com/auth/bigquery
+      - https://www.googleapis.com/auth/cloud-platform
+      - https://www.googleapis.com/auth/drive
+      - https://www.googleapis.com/auth/userinfo.email
+      target_name: default
+      threads: 4
+      type: bigquery
+  target: default
