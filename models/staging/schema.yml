@@ -1,0 +1,209 @@
+# ============================================================
+# Staging Schema: Tests and documentation for staging models
+# BOTH models have EXACTLY the same 29 columns
+# ============================================================
+
+version: 2
+
+models:
+
+  # ==========================================================
+  # STREAMING STAGING (29 columns)
+  # ==========================================================
+
+  - name: stg_streaming_transactions
+    description: "Cleaned streaming transaction data from Dataflow pipeline."
+
+    columns:
+
+      - name: transaction_id
+        description: "Unique transaction identifier."
+        tests:
+          - not_null
+          - unique
+
+      - name: event_timestamp
+        description: "Original event timestamp from source."
+        tests:
+          - not_null
+
+      - name: transaction_type
+        description: "Type of financial transaction (UPI, IMPS, NEFT, etc.)."
+        tests:
+          - not_null
+
+      - name: amount
+        description: "Transaction amount in local currency."
+        tests:
+          - not_null
+
+      - name: currency
+        description: "Transaction currency code."
+
+      - name: merchant_id
+        description: "Unique merchant identifier."
+
+      - name: merchant_name
+        description: "Name of the merchant."
+
+      - name: merchant_category
+        description: "Category of the merchant."
+
+      - name: country
+        description: "Country where transaction originated."
+
+      - name: city
+        description: "City where transaction originated."
+
+      - name: payment_channel
+        description: "Channel used for payment (MOBILE_APP, WEB, POS_TERMINAL)."
+
+      - name: payment_method
+        description: "Payment method used (CARD, UPI, NETBANKING)."
+
+      - name: is_vpn_used
+        description: "Whether VPN was detected during transaction."
+
+      - name: login_to_checkout_sec
+        description: "Seconds between login and checkout (bot detection signal)."
+
+      - name: bot_behavior_flag
+        description: "Whether bot-like behavior was detected."
+
+      - name: customer_id_masked
+        description: "SHA-256 hashed customer identifier."
+        tests:
+          - not_null
+
+      - name: receiver_id_masked
+        description: "SHA-256 hashed receiver identifier."
+
+      - name: card_number_masked
+        description: "SHA-256 hashed card number."
+
+      - name: device_id_masked
+        description: "SHA-256 hashed device identifier."
+
+      - name: ip_address_masked
+        description: "SHA-256 hashed IP address."
+
+      - name: fraud_score
+        description: "Fraud risk score (0-100) computed by Dataflow."
+
+      - name: fraud_band
+        description: "Fraud risk band classification."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - LOW
+                  - MEDIUM
+                  - HIGH
+                  - CRITICAL
+
+      - name: is_fraud
+        description: "Boolean flag for high-risk fraud transactions."
+
+      - name: is_high_amount
+        description: "Boolean flag for transactions over 1 Lakh."
+
+      - name: action_required
+        description: "Required action for operations team."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - CLEAR
+                  - MONITOR
+                  - REVIEW
+                  - BLOCK
+
+      - name: data_source
+        description: "Pipeline source identifier."
+        tests:
+          - not_null
+
+      - name: processing_timestamp
+        description: "Timestamp when pipeline processed this record."
+
+      - name: transaction_date
+        description: "Date derived from event_timestamp for partitioning."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "Timestamp when dbt loaded the record."
+        tests:
+          - not_null
+
+  # ==========================================================
+  # BATCH STAGING (SAME 29 columns)
+  # ==========================================================
+
+  - name: stg_transactions
+    description: "Cleaned batch transaction data from PySpark pipeline."
+
+    columns:
+
+      - name: transaction_id
+        description: "Unique transaction identifier."
+        tests:
+          - not_null
+          - unique
+
+      - name: event_timestamp
+        description: "Original event timestamp."
+        tests:
+          - not_null
+
+      - name: transaction_type
+        description: "Type of financial transaction."
+        tests:
+          - not_null
+
+      - name: amount
+        description: "Transaction amount."
+        tests:
+          - not_null
+
+      - name: customer_id_masked
+        description: "SHA-256 hashed customer identifier."
+        tests:
+          - not_null
+
+      - name: fraud_band
+        description: "Fraud risk band."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - LOW
+                  - MEDIUM
+                  - HIGH
+                  - CRITICAL
+
+      - name: action_required
+        description: "Required action."
+        tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - CLEAR
+                  - MONITOR
+                  - REVIEW
+                  - BLOCK
+
+      - name: data_source
+        description: "Pipeline source."
+        tests:
+          - not_null
+
+      - name: transaction_date
+        description: "Date for partitioning."
+        tests:
+          - not_null
+
+      - name: loaded_at
+        description: "dbt load timestamp."
+        tests:
+          - not_null

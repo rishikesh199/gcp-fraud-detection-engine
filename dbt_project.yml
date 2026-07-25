@@ -1,0 +1,28 @@
+# dbt_project.yml — Project ka main configuration file
+# Ye file dbt ko batati hai ki project ka naam kya hai,
+# models kahan hain, aur kaise materialize honge
+
+name: 'fraud_detection'
+version: '1.0.0'
+config-version: 2
+
+profile: 'fraud_detection'
+
+# Paths
+model-paths: ['models']
+analysis-paths: ['analyses']
+test-paths: ['tests']
+seed-paths: ['seeds']
+macro-paths: ['macros']
+snapshot-paths: ['snapshots']
+
+# Default materializations
+models:
+  fraud_detection:
+    staging:
+      +materialized: view          # Staging = views (lightweight, always fresh)
+      +schema: fraud_staging_dev   # Target dataset in BigQuery
+    marts:
+      +materialized: table         # Marts = tables (fast queries, stored)
+      +schema: fraud_marts_dev     # Target dataset in BigQuery
+      +tags: ['daily']             # Tag for selective runs

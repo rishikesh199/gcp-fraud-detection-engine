@@ -1,0 +1,18 @@
+# ============================================================
+# Source definitions - Raw data tables in BigQuery
+# Both tables have EXACTLY the same 27 columns
+# ============================================================
+version: 2
+
+sources:
+  - name: fraud_raw
+    database: fraud-detection-de-project
+    schema: fraud_raw_dev
+    description: "Raw data from streaming (Dataflow) and batch (PySpark) pipelines"
+
+    tables:
+      - name: ext_batch_transactions
+        description: "External table over Parquet files from PySpark batch pipeline (27 columns)"
+
+      - name: raw_streaming_transactions
+        description: "Streaming inserts from Dataflow pipeline (27 columns)"
