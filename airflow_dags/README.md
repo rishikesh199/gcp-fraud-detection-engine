@@ -1,24 +1,37 @@
-# 🎼 Airflow DAGs — Cloud Composer Orchestration
+# Pipeline Orchestration (Airflow)
 
-This directory contains **Apache Airflow DAGs** that run on **Cloud Composer 2** for orchestrating the batch fraud detection pipeline.
+## 📌 Enterprise Purpose
+This module is the brain of the automated batch data lifecycle. It uses **Apache Airflow** (running on Cloud Composer) to orchestrate dependencies. Most importantly, it implements the **Ephemeral Cluster Pattern**—spinning up a Dataproc cluster just-in-time, running the Spark job, triggering dbt, and immediately tearing the cluster down. This practice saves thousands of dollars in idle cloud compute costs.
 
-## What's Inside
-- `fraud_batch_pipeline_dag.py` — Main batch pipeline DAG
-- `data_quality_dag.py` — Data quality check DAG
-- `cleanup_dag.py` — Resource cleanup DAG (cost optimization)
+## 🔄 DAG Execution Graph (Dependencies)
+```mermaid
+flowchart TD
+    A("DAG Scheduled Run") --> B["DataprocCreateClusterOperator"]
+    B --> C{"Cluster Provisioned?"}
+    C -->|"Yes"| D["DataprocSubmitJobOperator (PySpark)"]
+    C -->|"No"| ERR1("Alert: Infrastructure Failure")
+    
+    D --> E{"Spark Job Complete?"}
+    E -->|"Yes"| F["Trigger dbt Cloud Job / BashOperator"]
+    E -->|"No"| G["DataprocDeleteClusterOperator"]
+    
+    F --> G
+    G --> H("Cluster Destroyed - $0 Idle Cost")
+```
 
-## Main DAG Flow (fraud_batch_pipeline_dag)
-1. **check_source_data** — Verify raw data exists in GCS
-2. **create_dataproc_cluster** — Spin up ephemeral Dataproc cluster
-3. **submit_pyspark_etl** — Run PySpark ETL job
-4. **delete_dataproc_cluster** — Delete cluster (cost savings!)
-5. **trigger_dbt_run** — Trigger dbt Cloud job via API
-6. **validate_bigquery_data** — Check data loaded correctly
-7. **send_notification** — Email/Slack success notification
+## 📦 Required Software & Dependencies
+- `pip install apache-airflow` (For local syntax validation).
+- `pip install apache-airflow-providers-google` (Required to use GCP-specific operators like Dataproc).
 
-## Deployment
-DAGs are synced to Cloud Composer's GCS bucket automatically.
+## 📄 DAG Breakdown (File: `fraud_batch_dag.py`)
+- Defines the DAG with `schedule_interval='@daily'`.
+- **Task 1:** Defines the Dataproc cluster hardware configuration (Master/Worker machine types).
+- **Task 2:** Submits the PySpark file stored in GCS.
+- **Task 3:** Triggers the downstream analytics transformation.
+- **Task 4 (Critical):** Uses `trigger_rule='all_done'`. This ensures that even if Task 2 (Spark) throws a fatal exception, Airflow will still execute Task 4 to delete the cluster, preventing massive cloud billing leaks.
 
-## Schedule
-- **Batch pipeline**: Daily at 2:00 AM IST
-- **Data quality**: Daily at 4:00 AM IST (after batch completes)
+## 🚀 Deployment Instructions
+Simply copy the python file into the GCS bucket monitored by Cloud Composer:
+```bash
+gsutil cp fraud_batch_dag.py gs://<COMPOSER_BUCKET>/dags/
+```

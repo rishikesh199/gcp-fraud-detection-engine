@@ -1,25 +1,24 @@
-# 🧪 Tests — Quality Assurance
+# Quality Assurance & Testing Suite
 
-This directory contains test scripts for validating pipeline components.
+## 📌 Enterprise Purpose
+This module contains the automated testing suite for the Python-based data pipelines. While `dbt` handles SQL-level data quality, this directory ensures the procedural code (Apache Beam, PySpark, Data Generator) functions correctly in isolation before being deployed to GCP.
 
-## What's Inside
-- `test_data_generator.py` — Unit tests for data generator
-- `test_streaming_pipeline.py` — Unit tests for Beam transforms
-- `test_pyspark_jobs.py` — Unit tests for PySpark ETL logic
-- `test_bigquery_schemas.py` — Schema validation tests
-- `integration/` — Integration test scripts
-- `conftest.py` — Pytest fixtures and shared setup
+## 🧪 Testing Scope
+### 1. PySpark UDF Tests
+Validates that the distributed SHA-256 masking logic successfully and deterministically anonymizes PII without causing data loss on null inputs.
 
-## Running Tests (from Cloud Shell)
+### 2. Apache Beam DoFn Tests
+Uses `TestPipeline` and `assert_that` to verify that the streaming pipeline correctly routes malformed JSON payloads to the Dead Letter Queue (DLQ) rather than crashing the worker.
+
+### 3. Data Generator Unit Tests
+Ensures the `Faker` profiles respect the probability distributions configured in `config.py` (e.g., ensuring exactly 5% of generated traffic is tagged as fraudulent).
+
+## 🚀 Execution Instructions
+Ensure you are in the root directory and have your virtual environment activated:
 ```bash
 # Run all tests
-python -m pytest tests/ -v
+pytest tests/
 
-# Run specific test file
-python -m pytest tests/test_data_generator.py -v
+# Run specific module tests
+pytest tests/test_spark_udfs.py
 ```
-
-## Test Coverage Goals
-- Unit tests: 80%+ code coverage
-- Integration tests: Key pipeline flows
-- Data quality: dbt tests (in dbt_fraud/ directory)

@@ -1,24 +1,44 @@
-# ⚡ Data Generator — Synthetic Transaction Generator
+# Data Simulation Engine
 
-This directory contains the Python script that generates **synthetic credit card transactions** for both batch and streaming pipelines.
+## 📌 Enterprise Purpose
+In the absence of real PII financial data, this module serves as a highly sophisticated **Synthetic Data Generator**. It does not output random noise; it utilizes the to generate 50,000 distinct customer profiles and explicitly simulates real-world fraudulent behaviors (e.g., rapid consecutive transactions, location spoofing) based on a strict 26-column Master Schema.
 
-## What's Inside
-- `generate_transactions.py` — Main generator script
-- `publish_to_pubsub.py` — Publishes generated transactions to Pub/Sub (streaming)
-- `generate_batch_csv.py` — Generates CSV files for batch processing
-- `config.py` — Configuration settings (fraud ratio, categories, etc.)
+## 🔄 Simulation Logic Flow
+```mermaid
+flowchart TD
+    A("Execute generator.py") --> B["Load config.py (Master 26-col Schema)"]
+    B --> C{"Initialize CustomerPool"}
+    C --> D["Generate 50,000 Realistic Customer Profiles (Faker)"]
+    D --> E{"Select Execution Mode"}
+    
+    E -->|"Stream Mode"| F["Generate Singular Event Payload"]
+    F --> G{"Apply Fraud Probability Logic"}
+    G --> H["Publish JSON directly to GCP Pub/Sub"]
+    H --> |"Wait configured interval"| F
+    
+    E -->|"Batch Mode"| J["Generate Bulk Dataset (100k chunks)"]
+    J --> K["Compute historical fraud patterns"]
+    K --> L["Write locally or to GCS as .csv"]
+    L --> |"Repeat until 10M records"| J
+```
 
-## Features
-- Realistic transaction patterns (amounts, merchants, locations)
-- Configurable fraud ratio (default: 3-5%)
-- Supports both batch (CSV) and streaming (Pub/Sub) modes
-- PII data included (for DLP masking demonstration)
+## 📦 Required Software & Dependencies
+- **Python 3.9+**
 
-## Usage (from Cloud Shell)
+- `pip install google-cloud-pubsub` (Required to push payloads to GCP).
+
+## 📄 File Breakdown
+| File | Functionality |
+|---|---|
+| `config.py` | The **Master Schema Contract**. Defines the exact 26 columns, data types, and the 12 specific fraud scenarios. No pipeline will function if this schema is violated. |
+| `transaction_generator.py` | The execution engine. Loops infinitely in streaming mode, or runs a fixed `for` loop in batch mode to output millions of records. |
+
+## 🚀 Execution Instructions
+**To simulate live production traffic (Streaming):**
 ```bash
-# Generate batch CSV
-python data_generator/generate_batch_csv.py --rows 100000
-
-# Stream to Pub/Sub (1-10 events/sec)
-python data_generator/publish_to_pubsub.py --rate 10
+python transaction_generator.py --mode stream --rate 100 --total 50000
+```
+**To generate a historical dataset (Batch):**
+```bash
+python transaction_generator.py --mode batch --records 10000000
 ```

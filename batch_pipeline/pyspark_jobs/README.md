@@ -1,26 +1,33 @@
-# ⚡ Batch Pipeline — PySpark Jobs on Dataproc
+# Batch Processing Pipeline (Batch Layer)
 
-This directory contains **PySpark** jobs that run on **Cloud Dataproc** for batch processing of historical fraud data.
+## 📌 Enterprise Purpose
+This module handles massive, bulk historical data processing using **Apache Spark**. When processing 10+ million CSV records, Python scripts run out of memory. This PySpark job is designed to be executed on a distributed **Cloud Dataproc** cluster, applying the exact same PII masking logic as the streaming layer, ensuring data consistency across the Lambda Architecture.
 
-## What's Inside
-- `etl_raw_to_processed.py` — Main ETL job (CSV → cleaned Parquet)
-- `write_to_iceberg.py` — Write processed data to Apache Iceberg tables
-- `data_quality_checks.py` — Data validation and quality checks
-- `feature_engineering.py` — Feature creation for fraud analysis
+## 🔄 Distributed Execution Flow
+```mermaid
+flowchart TD
+    A[("GCS: Raw CSV Drops")] -->|"spark.read.csv"| B("Dataproc Master Node")
+    B --> C["Distribute Data Partitions"]
+    C --> D["Worker Nodes: Apply SHA-256 UDF"]
+    D --> E["Worker Nodes: Type Casting (Timestamp/Date)"]
+    E --> F["Coalesce & df.write.format(bigquery)"]
+    F --> G[("BigQuery: ext_batch_transactions")]
+```
 
-## Pipeline Flow
-1. Read raw CSV from GCS (gs://fraud-dev-raw-data/)
-2. Clean & validate data (nulls, types, ranges)
-3. Feature engineering (hour extraction, amount bins, velocity)
-4. Write as Parquet to GCS processed zone
-5. Create/update Apache Iceberg tables
-6. Load to BigQuery external tables
+## 📦 Required Software & Dependencies
+- **Local Testing:** `pip install pyspark` and `Java 11`.
+- **Production:** Cloud Dataproc pre-installs Apache Spark and the Spark-BigQuery connector. No manual dependency management is required.
 
-## Execution (via Cloud Composer or manually)
+## 📄 Pipeline Stages (File: `batch_fraud_pipeline.py`)
+1. **Session Init:** Creates a `SparkSession` configured for the BigQuery connector.
+2. **UDF Registration:** Registers a Python User Defined Function to execute the SHA-256 masking in a distributed manner across Spark workers.
+3. **Transformation:** Converts string dates from the CSV into native SQL `TIMESTAMP` and `DATE` types.
+4. **Sinking:** Utilizes the highly optimized `spark-bigquery-connector` to stream chunks directly into the data warehouse.
+
+## 🚀 Execution Instructions
+*(Note: In production, this job is submitted automatically by Airflow. To run manually for debugging:)*
 ```bash
-gcloud dataproc jobs submit pyspark \
-  batch_pipeline/pyspark_jobs/etl_raw_to_processed.py \
-  --cluster=fraud-dev-dataproc-cluster \
-  --region=asia-south1 \
-  --properties=spark.jars.packages=org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.4.2
+gcloud dataproc jobs submit pyspark batch_fraud_pipeline.py \
+  --cluster=fraud-dev-ephemeral-cluster \
+  --region=asia-south1
 ```
