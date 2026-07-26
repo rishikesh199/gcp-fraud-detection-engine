@@ -1,37 +1,76 @@
-# Real-Time Streaming Pipeline (Speed Layer)
+# Streaming Ingestion Pipeline (Dataflow / Apache Beam)
 
-## 📌 Enterprise Purpose
-This module represents the "Speed Layer" of the Lambda Architecture. Built on **Apache Beam** and executed serverlessly on **Cloud Dataflow**, it ingests infinite streams of JSON transactions from Pub/Sub. Its primary enterprise duty is to enforce the schema, apply cryptographic hashing (`SHA-256`) to mask PII in real-time, and route processing failures to a Dead Letter Queue to prevent pipeline crashes.
+## Purpose
 
-## 🔄 Streaming Architecture & Exception Handling
+The `streaming_pipeline` component implements the real-time processing layer of our Lambda Architecture. Built with Apache Beam and executed on Google Cloud Dataflow, it is responsible for ingesting live transaction events from Pub/Sub, applying immediate transformations, performing critical PII masking, and writing the cleansed records directly into BigQuery.
+
+This pipeline ensures that near real-time data is available in the data warehouse (typically within seconds of the transaction occurring), enabling immediate fraud detection analytics and live dashboard updates.
+
+## Architecture
+
 ```mermaid
-flowchart LR
-    A(("Cloud Pub/Sub")) -->|"beam.io.ReadFromPubSub"| B("Dataflow Pipeline")
-    B --> C{"Schema Validation"}
-    C -->|"Valid (Matches 26 Cols)"| D["Apply SHA-256 Masking (Card, ID)"]
-    D --> E["Inject Processing Metadata"]
-    E -->|"beam.io.WriteToBigQuery"| F[("BigQuery: streaming_transactions")]
+graph TD
+    PS[Pub/Sub Topic: fraud-transactions-dev] -->|Reads| SUB[Pub/Sub Sub: fraud-transactions-sub-dev]
+    SUB -->|Ingests Messages| BEAM_READ[Beam: ReadFromPubSub]
     
-    C -->|"Malformed JSON"| G["Tag Payload with Error Stacktrace"]
-    G -->|"beam.io.WriteToText"| H[("GCS: Dead Letter Queue (DLQ)")]
+    subgraph Apache Beam / Cloud Dataflow
+        BEAM_READ --> PARSE[Beam: Parse JSON]
+        PARSE --> VALIDATE[Beam: Validate Schema]
+        VALIDATE --> MASK[Beam: SHA-256 Masking]
+        MASK --> FLATTEN[Beam: Flatten to 27 Columns]
+    end
+    
+    FLATTEN -->|Writes Streaming Inserts| BQ[BigQuery: fraud_raw_dev]
+    
+    subgraph PII Masking
+        MASK -.->|Hashes| CID(customer_id)
+        MASK -.->|Hashes| RID(receiver_id)
+        MASK -.->|Hashes| CARD(card_number)
+        MASK -.->|Hashes| DEV(device_id)
+        MASK -.->|Hashes| IP(ip_address)
+    end
 ```
 
-## 📦 Required Software & Dependencies
-- `pip install apache-beam[gcp]` (Contains the core framework and GCP I/O connectors).
-- **Google Cloud SDK (gcloud):** Required to authenticate and submit the job to the fully managed Dataflow runner.
+## Files
 
-## 📄 Pipeline Stages (File: `fraud_streaming_pipeline.py`)
-1. **Ingestion:** Connects to the Pub/Sub subscription provisioned by Terraform.
-2. **Validation `DoFn`:** Ensures every payload matches the expected schema. Drops bad data.
-3. **Masking `DoFn`:** Uses standard Python `hashlib` to anonymize `card_number` and `customer_id`.
-4. **Sinking:** Writes to the BigQuery Landing Zone using `CREATE_IF_NEEDED` and `APPEND` dispositions.
+- `fraud_streaming_pipeline.py`: The main Apache Beam pipeline script. It defines the DAG of transforms (DoFns) connecting the Pub/Sub source to the BigQuery sink.
+- `requirements.txt`: Python package dependencies required by the Dataflow workers.
+- `utils/`: Helper modules for specific transformations, such as the PII hashing logic.
 
-## 🚀 Deployment Instructions
-To submit the pipeline to Google Cloud Dataflow (Serverless):
+## Configuration
+
+Pipeline options are passed at execution time. Key parameters include:
+- `--input_subscription`: `projects/PROJECT_ID/subscriptions/fraud-transactions-sub-dev`
+- `--output_table`: `PROJECT_ID:fraud_raw_dev.streaming_transactions`
+- `--temp_location`: `gs://fraud-dev-dataflow-temp-2026/temp`
+- `--streaming`: Flag enabling streaming execution mode.
+
+## How It Works
+
+1. **Ingestion**: The pipeline continuously reads raw JSON messages from the `fraud-transactions-sub-dev` Pub/Sub subscription.
+2. **Parsing & Validation**: Messages are deserialized from bytes to Python dictionaries. Malformed records are diverted to a Dead Letter Queue (DLQ).
+3. **PII Masking**: A custom `DoFn` applies a secure SHA-256 hash to sensitive fields: `customer_id`, `receiver_id`, `card_number`, `device_id`, and `ip_address`. This is a strict compliance requirement.
+4. **Schema Alignment**: Nested JSON fields are flattened, ensuring the record perfectly matches the target 27-column BigQuery schema.
+5. **Sink**: The transformed records are streamed into the `fraud_raw_dev` BigQuery dataset using the Storage Write API for high throughput and low latency.
+
+## Dependencies
+
+- **Python 3.9+**
+- **apache-beam[gcp]**: Core framework for defining and running the pipeline on Dataflow.
+- **google-cloud-pubsub & google-cloud-bigquery**: For native GCP IO connectors.
+
+## Commands
+
 ```bash
-python fraud_streaming_pipeline.py \
-  --project=fraud-detection-de-project \
-  --region=asia-south1 \
-  --temp_location=gs://fraud-dev-dataflow-temp/ \
-  --runner=DataflowRunner
+# Run locally (DirectRunner) for testing
+python fraud_streaming_pipeline.py   --runner DirectRunner   --input_subscription projects/my-project/subscriptions/my-sub   --output_table my-project:fraud_raw_dev.streaming_test
+
+# Deploy to Cloud Dataflow
+python fraud_streaming_pipeline.py   --runner DataflowRunner   --project my-project   --region us-central1   --temp_location gs://fraud-dev-dataflow-temp-2026/temp   --input_subscription projects/my-project/subscriptions/fraud-transactions-sub-dev   --output_table my-project:fraud_raw_dev.transactions   --streaming
 ```
+
+## Integration Points
+
+- **Data Generator**: Consumes messages pushed to the upstream Pub/Sub topic by the generator.
+- **Infrastructure**: Relies on the Dataflow temporary GCS bucket, Pub/Sub configurations, and BigQuery datasets.
+- **dbt Transformations**: Serves as the real-time source for downstream dbt models in the staging layer.
